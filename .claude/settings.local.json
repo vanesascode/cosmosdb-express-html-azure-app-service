@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(python:*)",
+      "Bash(az webapp deploy:*)",
+      "Bash(az webapp config:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
