@@ -99,6 +99,12 @@ COSMOSDB_ACCOUNT_NAME="mi-cuenta-cosmosdb-produccion"
 DB_NAME="cosmicworks"
 CONTAINER_NAME="products"
 
+$RG_NAME = "mi-grupo"
+$LOCATION = "spaincentral"
+$COSMOSDB_ACCOUNT_NAME = "mi-cuenta-cosmosdb-produccion"
+$DB_NAME = "cosmicworks"
+$CONTAINER_NAME = "products"
+
 # 2. Crear grupo de recursos (si no existe)
 az group create --name $RG_NAME --location $LOCATION
 
@@ -152,6 +158,8 @@ Para que tu usuario pueda acceder a Cosmos DB con Azure AD, necesitas asignarle 
 # 1. Obtener tu Object ID (Identificador de Objeto), el cual es único en el directorio de Microsoft Entra ID (el Tenant). Entra ID es la única fuente de verdad para esa identidad.
 MY_USER_ID=$(az ad signed-in-user show --query id -o tsv)
 
+$MY_USER_ID = (az ad signed-in-user show --query id --output tsv)
+
 
 # 3. Asignar rol "Cosmos DB Built-in Data Contributor".
 # Si el scope fuera más granular, por ejemplo, si solo quisieras dar acceso a una base de datos específica, la sintaxis sería más larga (ej: --scope "/dbs/cosmicworks").
@@ -160,6 +168,13 @@ az cosmosdb sql role assignment create \
   --resource-group $RG_NAME \
   --role-definition-name "Cosmos DB Built-in Data Contributor" \
   --principal-id $MY_USER_ID \
+  --scope "/"
+
+az cosmosdb sql role assignment create `
+  --account-name $COSMOSDB_ACCOUNT_NAME `
+  --resource-group $RG_NAME `
+  --role-definition-name "Cosmos DB Built-in Data Contributor" `
+  --principal-id $MY_USER_ID `
   --scope "/"
 
 
@@ -625,11 +640,13 @@ az webapp config appsettings set \
 
 **⚠️ IMPORTANTE:** Este paso es crítico para que la app funcione correctamente.
 
+`npm install --production && npm start`: Instala solo las dependencias de producción (no devDependencies) - Esto fue importante, sustituyó a `"npm install && npm start"` porque Azure estaba ejecutando solo npm start directamente...
+
 ```bash
 az webapp config set \
   --name $APP_NAME \
   --resource-group $RG_NAME \
-  --startup-file "npm install && npm start"
+  --startup-file "npm install --production && npm start"
 ```
 
 ---
@@ -676,6 +693,16 @@ az webapp deploy \
   --type zip \
   --async false
 
+# ‼️ Mientras hace el deploy es muy importante mirar los logs para ir viendo lo que va mal:
+# Ver logs en tiempo real
+az webapp log tail --name $APP_NAME --resource-group $RG_NAME
+
+# Descargar logs completos
+az webapp log download \
+  --name $APP_NAME \
+  --resource-group $RG_NAME \
+  --log-file app-logs.zip
+
 # 6. Limpiar archivos temporales
 rm -rf deploy_package deploy.zip
 
@@ -700,14 +727,6 @@ echo "https://$WEBAPP_URL"
 # Probar endpoint de health
 curl https://$WEBAPP_URL/api/health
 
-# Ver logs en tiempo real
-az webapp log tail --name $APP_NAME --resource-group $RG_NAME
-
-# Descargar logs completos
-az webapp log download \
-  --name $APP_NAME \
-  --resource-group $RG_NAME \
-  --log-file app-logs.zip
 ```
 
 ---
@@ -919,7 +938,7 @@ az webapp config appsettings set \
 az webapp config set \
   --name $APP_NAME \
   --resource-group $RG_NAME \
-  --startup-file "npm install && npm start"
+  --startup-file "npm install --production && npm start"
 ```
 
 ---
@@ -1011,7 +1030,7 @@ az webapp config appsettings set \
     AZURE_CLIENT_ID="$MI_PRINCIPAL_ID"
 
 echo "6️⃣ Configurando startup command..."
-az webapp config set --name $APP_NAME --resource-group $RG_NAME --startup-file "npm install && npm start"
+az webapp config set --name $APP_NAME --resource-group $RG_NAME --startup-file "npm install --production && npm start"
 
 echo "✅ Infraestructura lista. Ahora despliega el código con ./deploy-to-azure.sh"
 echo "🌐 URL: https://${APP_NAME}.azurewebsites.net"
@@ -1104,7 +1123,7 @@ az webapp config show \
 az webapp config set \
   --name $APP_NAME \
   --resource-group $RG_NAME \
-  --startup-file "npm install && npm start"
+  --startup-file "npm install --production && npm start"
 ```
 
 #### 2. **Deployment exitoso pero "0 files synced"**
@@ -1312,7 +1331,7 @@ deploy_package/
 **Opción 1: Usando npm (RECOMENDADO)**
 
 ```bash
-az webapp config set --startup-file "npm install && npm start"
+az webapp config set --startup-file "npm install --production && npm start"
 ```
 
 **Ventajas:**
@@ -1389,7 +1408,7 @@ Antes de desplegar, verificar:
 - [ ] `app.ts` usa `join(__dirname, ...)` para rutas de archivos
 - [ ] Variables de entorno configuradas en Azure App Settings
 - [ ] Managed Identity habilitada y con role assignment en Cosmos DB
-- [ ] Startup command configurado: `"npm install && npm start"`
+- [ ] Startup command configurado: `"npm install --production && npm start"`
 
 ---
 

@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": "npx tsc && npx copyfiles ./static/**/* ./dist/",
-    "start": "node dist/app.js",
+    "start": "node app.js",
     "dev": "npx ts-node app.ts"
   },
   "dependencies": {
