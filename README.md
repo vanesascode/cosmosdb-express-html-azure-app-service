@@ -95,7 +95,7 @@ az login
 
 RG_NAME="mi-grupo"
 LOCATION="spaincentral"
-COSMOSDB_ACCOUNT_NAME="mi-cuenta-cosmosdb"
+COSMOSDB_ACCOUNT_NAME="mi-cuenta-cosmosdb-produccion"
 DB_NAME="cosmicworks"
 CONTAINER_NAME="products"
 
@@ -475,13 +475,25 @@ PORT=3001
 # Configuración básica
 RG_NAME="mi-grupo"
 LOCATION="spaincentral"
-COSMOSDB_ACCOUNT_NAME="mi-cuenta-cosmosdb"
+COSMOSDB_ACCOUNT_NAME="mi-cuenta-cosmosdb-produccion"
 DB_NAME="cosmicworks"
 CONTAINER_NAME="products"
 
-APP_NAME="mi-app-cosmosdb"
+APP_NAME="mi-app-cosmosdb-produccion"
 RUNTIME="NODE:22-lts"
 COSMOS_ENDPOINT="https://${COSMOSDB_ACCOUNT_NAME}.documents.azure.com:443/"
+
+
+# Configuración Powershell
+$RG_NAME = "mi-grupo"
+$LOCATION = "spaincentral"
+$COSMOSDB_ACCOUNT_NAME = "mi-cuenta-cosmosdb-produccion"
+$DB_NAME = "cosmicworks"
+$CONTAINER_NAME = "products"
+
+$APP_NAME = "mi-app-cosmosdb-produccion"
+$RUNTIME = "NODE:22-lts"
+$COSMOS_ENDPOINT = "https://$COSMOSDB_ACCOUNT_NAME.documents.azure.com:443/"
 
 # Login a Azure
 az login
@@ -501,7 +513,7 @@ az appservice plan create \
   --resource-group $RG_NAME \
   --location $LOCATION \
   --is-linux \
-  --sku B1
+  --sku S1
 
 az webapp create \
   --name $APP_NAME \
@@ -528,6 +540,12 @@ MI_PRINCIPAL_ID=$(az webapp identity assign \
   --resource-group $RG_NAME \
   --query principalId -o tsv)
 
+$MI_PRINCIPAL_ID = (az webapp identity assign `
+    --name $APP_NAME `
+    --resource-group $RG_NAME `
+    --query principalId `
+    --output tsv)
+
 echo "Managed Identity Principal ID: $MI_PRINCIPAL_ID"
 
 # Asignar rol de Contributor en Cosmos DB
@@ -536,6 +554,13 @@ az cosmosdb sql role assignment create \
   --resource-group $RG_NAME \
   --role-definition-name "Cosmos DB Built-in Data Contributor" \
   --principal-id $MI_PRINCIPAL_ID \
+  --scope "/"
+
+az cosmosdb sql role assignment create `
+  --account-name $COSMOSDB_ACCOUNT_NAME `
+  --resource-group $RG_NAME `
+  --role-definition-name "Cosmos DB Built-in Data Contributor" `
+  --principal-id $MI_PRINCIPAL_ID `
   --scope "/"
 ```
 
@@ -697,7 +722,7 @@ set -e
 
 # Variables
 RG_NAME="mi-grupo"
-APP_NAME="mi-app-cosmosdb"
+APP_NAME="mi-app-cosmosdb-produccion"
 
 echo "🔨 Building project..."
 npm run build
@@ -748,12 +773,12 @@ chmod +x deploy-to-azure.sh
 
 ### Diferencias con System-Assigned:
 
-| Característica | System-Assigned | User-Assigned |
-|----------------|-----------------|---------------|
-| **Ciclo de vida** | Vinculado al recurso | Independiente del recurso |
-| **Reutilizable** | ❌ No | ✅ Sí (múltiples recursos) |
-| **Gestión** | Automática | Manual |
-| **Uso típico** | Un recurso, una identidad | Múltiples recursos, una identidad |
+| Característica    | System-Assigned           | User-Assigned                     |
+| ----------------- | ------------------------- | --------------------------------- |
+| **Ciclo de vida** | Vinculado al recurso      | Independiente del recurso         |
+| **Reutilizable**  | ❌ No                     | ✅ Sí (múltiples recursos)        |
+| **Gestión**       | Automática                | Manual                            |
+| **Uso típico**    | Un recurso, una identidad | Múltiples recursos, una identidad |
 
 ---
 
@@ -763,11 +788,11 @@ chmod +x deploy-to-azure.sh
 # Configuración básica
 RG_NAME="mi-grupo"
 LOCATION="spaincentral"
-COSMOSDB_ACCOUNT_NAME="mi-cuenta-cosmosdb"
+COSMOSDB_ACCOUNT_NAME="mi-cuenta-cosmosdb-produccion"
 DB_NAME="cosmicworks"
 CONTAINER_NAME="products"
 
-APP_NAME="mi-app-cosmosdb"
+APP_NAME="mi-app-cosmosdb-produccion"
 RUNTIME="NODE:22-lts"
 COSMOS_ENDPOINT="https://${COSMOSDB_ACCOUNT_NAME}.documents.azure.com:443/"
 
@@ -808,6 +833,7 @@ echo "   Resource ID:  $MI_RESOURCE_ID"
 ```
 
 **Explicación de los IDs:**
+
 - **Principal ID:** Identificador en Azure Active Directory (usado para permisos RBAC)
 - **Resource ID:** Identificador del recurso en Azure Resource Manager (usado para vincular a recursos)
 
@@ -945,10 +971,10 @@ set -e
 # Variables
 RG_NAME="mi-grupo"
 LOCATION="spaincentral"
-COSMOSDB_ACCOUNT_NAME="mi-cuenta-cosmosdb"
+COSMOSDB_ACCOUNT_NAME="mi-cuenta-cosmosdb-produccion"
 DB_NAME="cosmicworks"
 CONTAINER_NAME="products"
-APP_NAME="mi-app-cosmosdb"
+APP_NAME="mi-app-cosmosdb-produccion"
 RUNTIME="NODE:22-lts"
 COSMOS_ENDPOINT="https://${COSMOSDB_ACCOUNT_NAME}.documents.azure.com:443/"
 MI_NAME="cosmosdb-identity"
